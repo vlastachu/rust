@@ -531,6 +531,7 @@ fn convert_method<'a, 'tcx>(ccx: &CrateCtxt<'a, 'tcx>,
                             id: ast::NodeId,
                             vis: hir::Visibility,
                             sig: &hir::MethodSig,
+                            defaultness: hir::Defaultness,
                             untransformed_rcvr_ty: Ty<'tcx>,
                             rcvr_ty_generics: &ty::Generics<'tcx>,
                             rcvr_ty_predicates: &ty::GenericPredicates<'tcx>) {
@@ -552,6 +553,7 @@ fn convert_method<'a, 'tcx>(ccx: &CrateCtxt<'a, 'tcx>,
                                     fty,
                                     explicit_self_category,
                                     vis,
+                                    defaultness,
                                     def_id,
                                     container);
 
@@ -598,6 +600,7 @@ fn convert_associated_const<'a, 'tcx>(ccx: &CrateCtxt<'a, 'tcx>,
                                       name: ast::Name,
                                       id: ast::NodeId,
                                       vis: hir::Visibility,
+                                      defaultness: hir::Defaultness,
                                       ty: ty::Ty<'tcx>,
                                       has_value: bool)
 {
@@ -609,6 +612,7 @@ fn convert_associated_const<'a, 'tcx>(ccx: &CrateCtxt<'a, 'tcx>,
     let associated_const = Rc::new(ty::AssociatedConst {
         name: name,
         vis: vis,
+        defaultness: defaultness,
         def_id: ccx.tcx.map.local_def_id(id),
         container: container,
         ty: ty,
@@ -623,11 +627,13 @@ fn convert_associated_type<'a, 'tcx>(ccx: &CrateCtxt<'a, 'tcx>,
                                      name: ast::Name,
                                      id: ast::NodeId,
                                      vis: hir::Visibility,
+                                     defaultness: hir::Defaultness,
                                      ty: Option<Ty<'tcx>>)
 {
     let associated_type = Rc::new(ty::AssociatedType {
         name: name,
         vis: vis,
+        defaultness: defaultness,
         ty: ty,
         def_id: ccx.tcx.map.local_def_id(id),
         container: container
@@ -765,6 +771,7 @@ fn convert_item(ccx: &CrateCtxt, it: &hir::Item) {
                     convert_associated_const(ccx, ImplContainer(def_id),
                                              impl_item.name, impl_item.id,
                                              impl_item.vis.inherit_from(parent_visibility),
+                                             impl_item.defaultness,
                                              ty, true /* has_value */);
                 }
             }
@@ -781,7 +788,7 @@ fn convert_item(ccx: &CrateCtxt, it: &hir::Item) {
 
                     convert_associated_type(ccx, ImplContainer(def_id),
                                             impl_item.name, impl_item.id, impl_item.vis,
-                                            Some(typ));
+                                            impl_item.defaultness, Some(typ));
                 }
             }
 
@@ -795,7 +802,7 @@ fn convert_item(ccx: &CrateCtxt, it: &hir::Item) {
 
                     convert_method(ccx, ImplContainer(def_id),
                                    impl_item.name, impl_item.id, method_vis,
-                                   sig, selfty, &ty_generics, &ty_predicates);
+                                   sig, impl_item.defaultness, selfty, &ty_generics, &ty_predicates);
                 }
             }
 
@@ -829,6 +836,7 @@ fn convert_item(ccx: &CrateCtxt, it: &hir::Item) {
                                              trait_item.name,
                                              trait_item.id,
                                              hir::Public,
+                                             hir::Defaultness::Default,
                                              ty,
                                              default.is_some())
                 }
@@ -846,6 +854,7 @@ fn convert_item(ccx: &CrateCtxt, it: &hir::Item) {
                                             trait_item.name,
                                             trait_item.id,
                                             hir::Public,
+                                            hir::Defaultness::Default,
                                             typ);
                 }
             }
@@ -859,6 +868,7 @@ fn convert_item(ccx: &CrateCtxt, it: &hir::Item) {
                                    trait_item.id,
                                    hir::Inherited,
                                    sig,
+                                   hir::Defaultness::Default
                                    tcx.mk_self_type(),
                                    &trait_def.generics,
                                    &trait_predicates);
